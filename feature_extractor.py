@@ -1,6 +1,7 @@
 import pandas as pd
 import os
 import math
+import numpy as np
 import random
 from statsmodels.robust.scale import mad
 
@@ -85,6 +86,36 @@ class FeatureExtractor(object):
         #we drop the id 
         X_df = X_df.drop("Id",1)
 
+        ####
+        ## ADD FEATURE
+
+        #Let's create a columns for the age 
+        X_df['AgeBuilt'] = 2010 - X_df['YearBuilt']
+        X_df['AgeSold'] = 2010 - X_df['YrSold']
+        #X_df['AgeBuilt'] = X_df['AgeSold'] - X_df['AgeBuilt']
+
+        #Let's create heuristic columns
+        X_df['LotShapeScore'] = X_df['LotShape'].replace({'Reg': 4, 'IR1': 3, 'IR2': 2, 'IR3': 1})
+        X_df['LandSlopeScore'] = X_df['LandSlope'].replace({'Gtl': 3, 'Mod': 2, 'Sev': 1})
+        X_df['ExterQualScore'] = X_df['ExterQual'].replace({'Ex': 5,'Gd': 4,'TA': 3, 'Fa': 2, 'Po': 1})
+        X_df['ExterCondScore'] = X_df['ExterCond'].replace({'Ex': 5,'Gd': 4,'TA': 3, 'Fa': 2, 'Po': 1})
+        X_df['BsmtQualScore'] = X_df['BsmtQual'].replace({'Ex': 5,'Gd': 4,'TA': 3, 'Fa': 2, 'Po': 1, 'None':0})
+        X_df['BsmtCondScore'] = X_df['BsmtCond'].replace({'Ex': 5,'Gd': 4,'TA': 3, 'Fa': 2, 'Po': 1, 'None':0})
+        X_df['BsmtExposureScore'] = X_df['BsmtExposure'].replace({'Gd': 4,'Av': 3, 'Mn': 2, 'No': 1, 'None':0})
+        X_df['HeatingQCScore'] = X_df['HeatingQC'].replace({'Ex': 5,'Gd': 4,'TA': 3, 'Fa': 2, 'Po': 1})
+        X_df['KitchenQualScore'] = X_df['KitchenQual'].replace({'Ex': 5,'Gd': 4,'TA': 3, 'Fa': 2, 'Po': 1, 'UKN': 0})
+        X_df['GarageQualScore'] = X_df['GarageQual'].replace({'Ex': 5,'Gd': 4,'TA': 3, 'Fa': 2, 'Po': 1, 'None':0})
+        X_df['GarageCondScore'] = X_df['GarageCond'].replace({'Ex': 5,'Gd': 4,'TA': 3, 'Fa': 2, 'Po': 1, 'None':0})
+        X_df['PoolQCScore'] = X_df['PoolQC'].replace({'Ex': 5,'Gd': 4,'TA': 3, 'Fa': 2, 'Po': 1, 'None':0})
+        X_df['FireplaceQuScore'] = X_df['FireplaceQu'].replace({'Ex': 5,'Gd': 4,'TA': 3, 'Fa': 2, 'Po': 1, 'None':0})
+        X_df['FenceScore'] = X_df['Fence'].replace({'GdPrv': 5,'MnPrv': 4,'GdWo': 3, 'MnWw': 2, 'None': 1})
+        X_df['BsmtFinType1Score'] = X_df['BsmtFinType1'].replace({'GLQ': 6,'ALQ': 5,'BLQ': 4,'Rec': 3, 'LwQ': 2, 'Unf': 1, 'None':0})
+        X_df['BsmtFinType2Score'] = X_df['BsmtFinType2'].replace({'GLQ': 6,'ALQ': 5,'BLQ': 4,'Rec': 3, 'LwQ': 2, 'Unf': 1, 'None':0})
+        X_df['FunctionalScore'] = X_df['Functional'].replace({'Typ': 7,'Min1': 6,'Min2': 5,'Mod': 4,'Maj1': 3, 'Maj2': 2, 'Sev': 1, 'Sal':0})
+		
+        #Let's lolilog the data
+        #X_df['GrLivArea'] = np.log1p(X_df['GrLivArea']) -> no use with gradient boosting
+
         #####
         ## CREATE AND KEEP NUMERIC DIMENSIONS
 
@@ -143,6 +174,8 @@ class FeatureExtractor(object):
         #We create the new dimensions for HouseStyle
         X_df= X_df.join(pd.get_dummies(X_df['HouseStyle'],prefix='HouseStyle'))
         X_df = X_df.drop("HouseStyle",1)
+
+        
 
         #We create the new dimensions for HouseStyle
         X_df= X_df.join(pd.get_dummies(X_df['YearBuilt'],prefix='YearBuilt'))
@@ -301,7 +334,27 @@ class FeatureExtractor(object):
 
         ####
         # ADD POTENTIAL NULL COLUMNS
-        columns_expected = ['LotFrontage',
+        columns_expected = [
+             'LotShapeScore',
+            'LandSlopeScore',
+            'ExterQualScore',
+            'ExterCondScore',
+            'BsmtQualScore',
+            'BsmtCondScore',
+            'BsmtCondScore',
+            'HeatingQCScore',
+            'KitchenQualScore',
+            'GarageQualScore',
+            'GarageCondScore',
+            'PoolQCScore',
+            'FireplaceQuScore',
+            'FenceScore',
+            'BsmtFinType1Score',
+            'BsmtFinType2Score',
+            'FunctionalScore' 
+            'AgeBuilt',
+            'AgeSold',
+            'LotFrontage',
             'LotArea',
             'OverallQual',
             'OverallCond',
@@ -1095,6 +1148,11 @@ class FeatureExtractor(object):
         for col in X_df.columns:
             if col not in columns_expected:
                 X_df = X_df.drop(col,1)
+
+        #Normalizing remaining data
+        #X_df['GrLivArea'] = np.log1p(X_df['GrLivArea'])
+
+        #X_df["TotalSF"] = X_df["TotalBsmtSF"] + X_df["1stFlrSF"] + X_df["2ndFlrSF"]
 
         X_array = X_df.values
         return X_array
