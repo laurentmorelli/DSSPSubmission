@@ -16,6 +16,7 @@ class FeatureExtractor(object):
         
         pd.options.mode.chained_assignment = None  # default='warn'
 
+       
         #####
         ## CLEAN MISSING VALUES BEGIN
         
@@ -44,6 +45,11 @@ class FeatureExtractor(object):
             return x
 
         X_df['MasVnrArea'] = X_df['MasVnrArea'].apply(cleanMasVnrArea)
+
+        #Just to be sure we're not dumb
+        if 'SalePrice' in X_df.columns:
+            X_df = X_df.drop('SalePrice',1)
+
 
         #clean other data
         X_df['Alley'] = X_df['Alley'].fillna('None')
@@ -1150,9 +1156,9 @@ class FeatureExtractor(object):
                 X_df = X_df.drop(col,1)
 
         #Normalizing remaining data
-        #X_df['GrLivArea'] = np.log1p(X_df['GrLivArea'])
+        X_df['GrLivArea'] = np.log1p(X_df['GrLivArea'])
 
-        #X_df["TotalSF"] = X_df["TotalBsmtSF"] + X_df["1stFlrSF"] + X_df["2ndFlrSF"]
+        X_df["TotalSF"] = np.log1p(X_df["TotalBsmtSF"] + X_df["1stFlrSF"] + X_df["2ndFlrSF"])
 
         X_array = X_df.values
         return X_array

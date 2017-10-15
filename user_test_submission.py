@@ -47,69 +47,92 @@ data = pd.read_csv("data/train.csv")
 
 #test remove some high prices
 #data[data['SalePrice'] < 600000]
+ ### Let's remove unwanted values
+mostWantedIds = [980,
+1091,
+1027,
+672,
+852,
+439,
+1255,
+444,
+964,
+395]
+
+
+def toduplicate_row(row):
+    if row.Id in mostWantedIds:
+        return True
+    else :
+        return False
+
+data2 = data[data.apply(toduplicate_row, axis=1)]
+data.append([data2]*5,ignore_index=True)
 
 #y_array = np.log1p(data['SalePrice'].values)
 y_array = data['SalePrice'].values
 X_df = data.drop("SalePrice",1)
+random_state_array = [61]
+for random_state in random_state_array:
+    skf = ShuffleSplit(y_array.shape[0], n_iter=2, test_size=0.03, random_state=random_state)
+    skf_is = list(skf)[0]
+    train_is, test_is = skf_is
 
-skf = ShuffleSplit(y_array.shape[0], n_iter=2, test_size=0.2, random_state=61)
-skf_is = list(skf)[0]
-train_is, test_is = skf_is
+    nbtest =1
+    matrixres = np.zeros(shape=(nbtest,5))
+    for i in range(nbtest):
+        trained_model = train_submission('.', X_df, y_array, train_is)
+        print "ok"
+        #y_pred_array = np.expm1(test_submission(trained_model, X_df, test_is))
+        #ground_truth_array = np.expm1(y_array[test_is])
+        y_pred_array = test_submission(trained_model, X_df, test_is)
+        ground_truth_array = y_array[test_is]
 
-nbtest =1
-matrixres = np.zeros(shape=(nbtest,5))
-for i in range(nbtest):
-    trained_model = train_submission('.', X_df, y_array, train_is)
-    print "ok"
-    #y_pred_array = np.expm1(test_submission(trained_model, X_df, test_is))
-    #ground_truth_array = np.expm1(y_array[test_is])
-    y_pred_array = test_submission(trained_model, X_df, test_is)
-    ground_truth_array = y_array[test_is]
+        score = np.sqrt(np.mean(np.square(ground_truth_array - y_pred_array)))
+        score_log = np.sqrt(np.square(np.log(y_pred_array + 1) - np.log(ground_truth_array + 1)).mean())
+        print 'RMSE =', score
+        print 'RMSLE =', score_log
+        
+        #Let's play it on the whole dataset
+        data = pd.read_csv("data/train.csv")
+        #data.append([data2]*5,ignore_index=True)
+        X_df = data
+        
+        fe, reg = trained_model
+        # Feature extraction
+        X_test_array = fe.transform(X_df)
 
-    score = np.sqrt(np.mean(np.square(ground_truth_array - y_pred_array)))
-    score_log = np.sqrt(np.square(np.log(y_pred_array + 1) - np.log(ground_truth_array + 1)).mean())
-    print 'RMSE =', score
-    print 'RMSLE =', score_log
-    
-    #Let's play it on the whole dataset
-    data = pd.read_csv("data/train.csv")
-    X_df = data
-    
-    fe, reg = trained_model
-    # Feature extraction
-    X_test_array = fe.transform(X_df)
+        # Regression
+        y_pred = reg.predict(X_test_array)
 
-    # Regression
-    y_pred = reg.predict(X_test_array)
+        results_train = pd.DataFrame({
+            "Id" : data["Id"],
+            "Original Saleprice" : data["SalePrice"],
+            "Calculated SalePrice" : y_pred,
+        })
 
-    results_train = pd.DataFrame({
-        "Id" : data["Id"],
-        "Original Saleprice" : data["SalePrice"],
-        "Calculated SalePrice" : y_pred,
-    })
+        # print results["SalePrice"]
+        results_train.to_csv("CompareSaleprice"+ str(random_state) +".csv", index=False)
 
-    # print results["SalePrice"]
-    results_train.to_csv("CompareSaleprice.csv", index=False)
+        #FOR THE FINAL STAGE
+        #now we export the data
+        data = pd.read_csv("data/test.csv")
+        X_df = data
+        
+        fe, reg = trained_model
+        # Feature extraction
+        X_test_array = fe.transform(X_df)
 
-    #FOR THE FINAL STAGE
-    #now we export the data
-    data = pd.read_csv("data/test.csv")
-    X_df = data
-    
-    fe, reg = trained_model
-    # Feature extraction
-    X_test_array = fe.transform(X_df)
+        # Regression
+        y_pred = reg.predict(X_test_array)
 
-    # Regression
-    y_pred = reg.predict(X_test_array)
+        results = pd.DataFrame({
+            "Id" : data["Id"],
+            "SalePrice" : y_pred,
+        })
 
-    results = pd.DataFrame({
-        "Id" : data["Id"],
-        "SalePrice" : y_pred,
-    })
-
-    # print results["SalePrice"]
-    results.to_csv("results.csv", index=False)
+        # print results["SalePrice"]
+        results.to_csv("results.csv", index=False)
 
 print "thx fot watching"
 print '\n'

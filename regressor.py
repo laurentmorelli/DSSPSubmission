@@ -46,11 +46,24 @@ class Regressor(BaseEstimator):
         #-> 32700.0678043
 
 
-        #GRADIENT BOOOST
+        #FIRST GRADIENT BOOOST
         self.clf = GradientBoostingRegressor(n_estimators=1000, learning_rate=0.1,
                                              max_depth=40, min_samples_split=30,
                                              loss='ls')
         #-> 32982.0783185
+
+        #OPTIMISED GRADIENT BOOOST
+        self.clf = GradientBoostingRegressor(learning_rate=0.2, 
+            n_estimators=1500,
+            max_depth=38,
+            min_samples_split=160,
+            min_samples_leaf=16,
+            #max_features=28,
+            #max_features=150,
+            subsample=0.95,
+            loss='ls')
+        #-> 32982.0783185
+
 
 
         #LINEAR REGRESSOR
